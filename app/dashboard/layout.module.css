@@ -1,0 +1,17 @@
+/* ====================================================
+   Dashboard Layout Shell
+   ==================================================== */
+
+   .dashShell {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--void);
+  }
+  
+  .mainContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }

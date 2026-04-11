@@ -1,0 +1,147 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import FlightViewer3D from "../components/FlightViewer3D/FlightViewer3D";
+import useSWR from "swr";
+import { getToken, getApiUrl } from "../lib/auth";
+import { Waypoint } from "../components/MissionMap/MissionMap";
+
+// Hook de telemetría real por WebSockets
+function useDroneTelemetry(droneId: string) {
+  const [telemetry, setTelemetry] = useState({
+    pitch: 0,
+    roll: 0,
+    yaw: 0,
+    altitude: 0,
+    speed: 0, 
+    status: "unknown",
+    gps: { lat: 0, lng: 0, alt: 0 },
+    currentWaypointIndex: 0,
+    currentMissionId: "",
+  });
+
+  useEffect(() => {
+    // Fetch initial status
+    fetch(`${getApiUrl()}/api/drones`, { headers: { "Authorization": `Bearer ${getToken()}` } })
+      .then(res => res.json())
+      .then(data => {
+        const drone = data.drones?.find((d: any) => d.droneId === droneId);
+        if (drone) {
+          setTelemetry(prev => ({ 
+            ...prev, 
+            status: drone.status,
+            currentMissionId: drone.currentMission || "" 
+          }));
+        }
+      })
+      .catch(console.error);
+  }, [droneId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    
+    const token = getToken();
+    if (!token) return;
+
+    // Convert http(s):// url to ws(s)://
+    const baseUrl = getApiUrl();
+    const wsUrl = baseUrl.replace(/^http/, "ws") + `/ws/gcs?token=${token}`;
+    
+    let ws: WebSocket;
+    let isConnected = false;
+
+    const connect = () => {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log("Visor 3D: Conectado al stream de telemetría GCS");
+        isConnected = true;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // Solo actualizamos si el tipo es telemetry y el droneId coincide con nuestro target
+          if (data.droneId === droneId) {
+            if (data.type === "telemetry") {
+              setTelemetry((prev) => ({
+                ...prev,
+                pitch: data.orientation?.pitch || 0,
+                roll: data.orientation?.roll || 0,
+                yaw: data.orientation?.yaw || 0,
+                altitude: data.gps?.alt || 0,
+                gps: {
+                  lat: data.gps?.lat || 0,
+                  lng: data.gps?.lng || 0,
+                  alt: data.gps?.alt || 0,
+                },
+                currentWaypointIndex: data.mission?.currentWaypointIndex || 0,
+              }));
+            } else if (data.type === "drone_status" || data.type === "mission_ack") {
+              setTelemetry((prev) => ({
+                ...prev,
+                status: data.status,
+                currentMissionId: data.missionId || prev.currentMissionId,
+              }));
+            } else if (data.type === "mission_assigned") {
+              setTelemetry((prev) => ({
+                ...prev,
+                status: "mission_received",
+                currentMissionId: data.missionId,
+              }));
+            }
+          }
+        } catch (e) {
+          console.error("Error parseando telemetría WS", e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("Visor 3D: Desconectado del stream. Reconectando en 3s...");
+        isConnected = false;
+        setTimeout(connect, 3000);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (ws && isConnected) {
+        ws.close();
+      }
+    };
+  }, [droneId]);
+
+  return telemetry;
+}
+
+export default function VisorVueloClient({ droneId }: { droneId: string }) {
+  const telemetry = useDroneTelemetry(droneId);
+
+  // Fetch Mission Waypoints
+  const { data: missionData } = useSWR(
+    telemetry.currentMissionId ? `${getApiUrl()}/api/missions/${telemetry.currentMissionId}` : null,
+    (url) => fetch(url, { headers: { "Authorization": `Bearer ${getToken()}` } }).then(r => r.json())
+  );
+
+  const waypoints: Waypoint[] = missionData?.mission?.waypoints || [];
+  const waitingAcceptance = telemetry.status === "mission_received" || telemetry.status === "unknown";
+
+  return (
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#02040a" }}>
+      <FlightViewer3D 
+        droneId={droneId}
+        pitch={telemetry.pitch}
+        roll={telemetry.roll}
+        yaw={telemetry.yaw}
+        altitude={telemetry.altitude}
+        speed={telemetry.speed}
+        gps={telemetry.gps}
+        waypoints={waypoints}
+        currentWaypointIndex={telemetry.currentWaypointIndex}
+        waitingAcceptance={waitingAcceptance}
+      />
+    </div>
+  );
+}

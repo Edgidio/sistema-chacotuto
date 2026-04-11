@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ===================================================
+   ChacOtuto GCS — Ground Control Design System
+   Domain: Drone administration / telemetry / flight ops
+   Depth strategy: Borders-only (technical, dense)
+   Color temperature: Cold, precise, instrument-lit
+   =================================================== */
+
+:root {
+  /* --- Void: Surface Elevation --- */
+  --void:          #080c12;   /* deepest layer — the night sky behind instruments */
+  --panel:         #0d1117;   /* primary surface — instrument panel background */
+  --instrument:    #131922;   /* elevated card — a mounted gauge or readout */
+  --overlay:       #1a2230;   /* highest elevation — dropdown, modal */
+
+  /* --- HUD: The Accent System --- */
+  --hud-cyan:      #00e5cc;   /* primary accent — HUD overlay, active instruments */
+  --hud-cyan-dim:  #00b8a3;   /* hover state */
+  --hud-cyan-mute: rgba(0, 229, 204, 0.08);  /* subtle background tint */
+  --hud-cyan-glow: rgba(0, 229, 204, 0.25);  /* focus ring, glow effects */
+
+  /* --- Telemetry: Semantic --- */
+  --telemetry-green:  #22c55e;  /* systems nominal, GPS lock, connected */
+  --telemetry-amber:  #f59e0b;  /* warning — battery low, signal weak */
+  --telemetry-red:    #ef4444;  /* critical — connection lost, error */
+  --signal-magenta:   #c026d3;  /* tracking lines, compass reference */
+
+  /* --- Ink: Text Hierarchy — */
+  --ink-primary:    #e8edf4;   /* default text — bright but not white */
+  --ink-secondary:  #8b95a6;   /* supporting text — dimmed instruments */
+  --ink-tertiary:   #5a6577;   /* metadata — inactive labels */
+  --ink-muted:      #3a4455;   /* disabled, placeholder — instruments off */
+
+  /* --- Wire: Border Progression --- */
+  --wire:           rgba(138, 160, 195, 0.10);  /* standard separation */
+  --wire-soft:      rgba(138, 160, 195, 0.06);  /* softer separation */
+  --wire-emphasis:  rgba(138, 160, 195, 0.18);  /* emphasis */
+  --wire-focus:     rgba(0, 229, 204, 0.50);    /* maximum emphasis — focus rings */
+
+  /* --- Control Tokens --- */
+  --control-bg:     #0a1018;   /* input background — inset, darker than surface */
+  --control-border: rgba(138, 160, 195, 0.14);
+  --control-focus:  rgba(0, 229, 204, 0.35);
+
+  /* --- Spacing (base 4px) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* --- Radii (sharp = technical) --- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* --- Motion --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 400ms;
+
+  --background: var(--void);
+  --foreground: var(--ink-primary);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* === Base Reset === */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--void);
+  color: var(--ink-primary);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+/* === Selection === */
+::selection {
+  background: var(--hud-cyan-glow);
+  color: var(--ink-primary);
+}
+
+/* === Scrollbar (Webkit) === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-tertiary);
+}
+
+/* === Focus visible ring === */
+:focus-visible {
+  outline: 1.5px solid var(--wire-focus);
+  outline-offset: 2px;
+}

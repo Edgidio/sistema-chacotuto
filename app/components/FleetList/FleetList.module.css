@@ -1,0 +1,15 @@
+/* ====================================================
+   FleetList / FleetGrid
+   ==================================================== */
+
+   .contentAreaList {
+    flex: 1;
+    padding: var(--space-6);
+    overflow-y: auto;
+  }
+  
+  .droneGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-5);
+  }

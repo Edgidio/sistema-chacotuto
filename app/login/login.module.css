@@ -1,0 +1,641 @@
+/* ====================================================
+   Login — GCS Authentication Interface
+   Split-screen: HUD Canvas (left) + Auth Form (right)
+   Depth: borders-only
+   Signature: radar ring, scan lines, telemetry readouts
+   ==================================================== */
+
+/* --- Shell: full viewport split --- */
+.loginShell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--void);
+}
+
+/* ========================================
+   LEFT PANEL: HUD Canvas
+   ======================================== */
+.hudCanvas {
+  position: relative;
+  flex: 1 1 55%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--void);
+}
+
+/* Grid overlay — like a flight instrument grid */
+.gridOverlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--wire-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--wire-soft) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.6;
+}
+
+/* Scan line — horizontal sweep like radar display */
+.scanLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--hud-cyan-glow) 20%,
+    var(--hud-cyan) 50%,
+    var(--hud-cyan-glow) 80%,
+    transparent 100%
+  );
+  opacity: 0.4;
+  animation: scanSweep 4s var(--ease-out) infinite;
+}
+
+@keyframes scanSweep {
+  0%   { top: -2px; opacity: 0; }
+  5%   { opacity: 0.4; }
+  95%  { opacity: 0.4; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* --- Corner marks: HUD frame --- */
+.cornerMark {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+}
+.cornerMark::before,
+.cornerMark::after {
+  content: '';
+  position: absolute;
+  background: var(--hud-cyan);
+  opacity: 0.35;
+}
+.cornerMark::before {
+  width: 24px;
+  height: 1px;
+}
+.cornerMark::after {
+  width: 1px;
+  height: 24px;
+}
+
+.cornerMark[data-corner="tl"] { top: 24px; left: 24px; }
+.cornerMark[data-corner="tl"]::before { top: 0; left: 0; }
+.cornerMark[data-corner="tl"]::after { top: 0; left: 0; }
+
+.cornerMark[data-corner="tr"] { top: 24px; right: 24px; }
+.cornerMark[data-corner="tr"]::before { top: 0; right: 0; }
+.cornerMark[data-corner="tr"]::after { top: 0; right: 0; }
+
+.cornerMark[data-corner="bl"] { bottom: 24px; left: 24px; }
+.cornerMark[data-corner="bl"]::before { bottom: 0; left: 0; }
+.cornerMark[data-corner="bl"]::after { bottom: 0; left: 0; }
+
+.cornerMark[data-corner="br"] { bottom: 24px; right: 24px; }
+.cornerMark[data-corner="br"]::before { bottom: 0; right: 0; }
+.cornerMark[data-corner="br"]::after { bottom: 0; right: 0; }
+
+/* --- Brand Cluster: central content --- */
+.brandCluster {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+/* --- Radar Ring --- */
+.radarRing {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 229, 204, 0.18);
+}
+.radarRing::before {
+  content: '';
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 229, 204, 0.10);
+}
+.radarRing::after {
+  content: '';
+  position: absolute;
+  inset: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 229, 204, 0.06);
+}
+
+/* Radar sweep arm */
+.radarSweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 1px;
+  transform-origin: 0% 50%;
+  background: linear-gradient(90deg, var(--hud-cyan), transparent);
+  opacity: 0.6;
+  animation: radarRotate 3s linear infinite;
+}
+.radarSweep::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  transform: translateY(-50%);
+  background: conic-gradient(
+    from -10deg at 0% 50%,
+    transparent 0deg,
+    rgba(0, 229, 204, 0.08) 30deg,
+    transparent 60deg
+  );
+  transform-origin: 0% 50%;
+}
+
+@keyframes radarRotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Radar dots — simulated targets */
+.radarDot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--hud-cyan);
+  animation: dotPulse 3s ease-in-out infinite;
+}
+.radarDot:first-of-type {
+  top: 30%;
+  left: 62%;
+}
+.radarDot[data-pos="2"] {
+  top: 55%;
+  left: 28%;
+  animation-delay: 1s;
+}
+.radarDot[data-pos="3"] {
+  top: 72%;
+  left: 58%;
+  animation-delay: 2s;
+  width: 3px;
+  height: 3px;
+  opacity: 0.6;
+}
+
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.6); }
+}
+
+/* --- Status Block: Title + subtitle --- */
+.statusBlock {
+  text-align: center;
+}
+
+.statusLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--hud-cyan);
+  opacity: 0.7;
+  display: block;
+  margin-bottom: var(--space-3);
+}
+
+.brandName {
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--ink-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.brandAccent {
+  color: var(--hud-cyan);
+}
+
+.brandSub {
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  margin-top: var(--space-2);
+  letter-spacing: 0.5px;
+}
+
+/* --- Telemetry Badges --- */
+.telemetryRow {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.telBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 12px;
+  border: 1px solid var(--wire);
+  border-radius: var(--radius-sm);
+  background: rgba(13, 17, 23, 0.6);
+}
+
+.telDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.telDot[data-status="online"] {
+  background: var(--telemetry-green);
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  animation: dotPulse 2s ease-in-out infinite;
+}
+.telDot[data-status="warning"] {
+  background: var(--telemetry-amber);
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+
+.telLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--ink-tertiary);
+  transform: translateY(1px); /* micro-adjustment for the font baseline */
+}
+
+.telValue {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  transform: translateY(1px); /* micro-adjustment for the font baseline */
+}
+
+/* --- Coordinate readout: bottom of HUD --- */
+.coordReadout {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: var(--ink-muted);
+}
+.coordSep {
+  color: var(--wire-emphasis);
+}
+
+
+/* ========================================
+   RIGHT PANEL: Auth Form
+   ======================================== */
+.authPanel {
+  flex: 0 0 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-10);
+  border-left: 1px solid var(--wire);
+  background: var(--panel);
+}
+
+.authInner {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* Mobile brand — hidden on desktop */
+.mobileBrand {
+  display: none;
+  text-align: center;
+  margin-bottom: var(--space-4);
+}
+.mobileBrandLabel {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--hud-cyan);
+  opacity: 0.7;
+}
+.mobileBrandName {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--ink-primary);
+  margin: var(--space-1) 0 0;
+  line-height: 1;
+}
+
+/* --- Auth Header --- */
+.authHeader {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.authTitle {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.authSubtitle {
+  font-size: 13px;
+  color: var(--ink-tertiary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* --- Form --- */
+.authForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Field group */
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.fieldLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+}
+.fieldLabel svg {
+  opacity: 0.5;
+}
+
+.fieldInput {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink-primary);
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+  outline: none;
+}
+.fieldInput::placeholder {
+  color: var(--ink-muted);
+}
+.fieldInput:hover:not(:disabled) {
+  border-color: var(--wire-emphasis);
+}
+.fieldInput:focus {
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 0 3px var(--control-focus);
+}
+.fieldInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Password wrapper */
+.passwordWrap {
+  position: relative;
+}
+.passwordWrap .fieldInput {
+  padding-right: var(--space-10);
+}
+.passwordToggle {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.passwordToggle:hover {
+  color: var(--ink-secondary);
+}
+
+/* Error message */
+.errorMsg {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: 12px;
+  color: var(--telemetry-red);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  border-radius: var(--radius-sm);
+}
+
+/* Form meta: remember + forgot */
+.formMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.checkInput {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.checkMark {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  position: relative;
+  flex-shrink: 0;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background var(--duration-fast) var(--ease-out);
+}
+.checkInput:checked + .checkMark {
+  background: var(--hud-cyan);
+  border-color: var(--hud-cyan);
+}
+.checkInput:checked + .checkMark::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 4px;
+  width: 4px;
+  height: 7px;
+  border: solid var(--void);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+.checkInput:focus-visible + .checkMark {
+  box-shadow: 0 0 0 3px var(--control-focus);
+}
+
+.forgotLink {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+.forgotLink:hover {
+  color: var(--hud-cyan);
+}
+
+/* --- Submit button --- */
+.submitBtn {
+  width: 100%;
+  padding: var(--space-3) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--void);
+  background: var(--hud-cyan);
+  border: 1px solid var(--hud-cyan);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out),
+              transform var(--duration-fast) var(--ease-out);
+  outline: none;
+}
+.submitBtn:hover:not(:disabled) {
+  background: var(--hud-cyan-dim);
+  border-color: var(--hud-cyan-dim);
+  box-shadow: 0 0 20px rgba(0, 229, 204, 0.2);
+}
+.submitBtn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.submitBtn:focus-visible {
+  box-shadow: 0 0 0 3px var(--control-focus);
+}
+.submitBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submitLoading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(8, 12, 18, 0.3);
+  border-top-color: var(--void);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Auth footer --- */
+.authFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--wire-soft);
+}
+
+.footerVersion,
+.footerCopy {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  color: var(--ink-muted);
+  letter-spacing: 0.3px;
+}
+.footerSep {
+  color: var(--ink-muted);
+  opacity: 0.4;
+}
+
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+@media (max-width: 960px) {
+  .loginShell {
+    flex-direction: column;
+  }
+
+  .hudCanvas {
+    display: none;
+  }
+
+  .mobileBrand {
+    display: block;
+  }
+
+  .authPanel {
+    flex: 1;
+    border-left: none;
+    padding: var(--space-6);
+  }
+}
+
+@media (min-width: 961px) and (max-width: 1200px) {
+  .authPanel {
+    flex: 0 0 420px;
+  }
+}

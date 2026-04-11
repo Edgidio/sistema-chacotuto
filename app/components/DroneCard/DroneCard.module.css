@@ -1,0 +1,168 @@
+/* ====================================================
+   DroneCard
+   ==================================================== */
+
+   .droneCard {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--wire);
+    border-radius: var(--radius-sm);
+    padding: var(--space-4) var(--space-5);
+    position: relative;
+    overflow: hidden;
+  }
+  .droneCard::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 3px; height: 100%;
+    background: var(--wire);
+  }
+  .droneCard[data-status="online"]::before {
+    background: var(--telemetry-green);
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  }
+  .droneCard[data-status="syncing"]::before {
+    background: var(--telemetry-amber);
+  }
+  .droneCard[data-status="offline"] {
+    opacity: 0.6;
+  }
+  
+  .cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-5);
+  }
+  
+  .cardIdGroup {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  
+  .droneModelIcon {
+    color: var(--ink-tertiary);
+    display: flex;
+  }
+  
+  .droneId {
+    font-family: var(--font-mono), monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-primary);
+    margin: 0;
+  }
+  
+  .statusBadge {
+    font-family: var(--font-mono), monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    border: 1px solid var(--wire);
+    color: var(--ink-tertiary);
+    letter-spacing: 1px;
+  }
+  .statusBadge[data-status="online"] {
+    border-color: rgba(34, 197, 94, 0.3);
+    color: var(--telemetry-green);
+    background: rgba(34, 197, 94, 0.05);
+  }
+  .statusBadge[data-status="syncing"] {
+    border-color: rgba(245, 158, 11, 0.3);
+    color: var(--telemetry-amber);
+    background: rgba(245, 158, 11, 0.05);
+  }
+  
+  .cardMetrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4) var(--space-4);
+    margin-bottom: var(--space-6);
+  }
+  
+  .metricBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .metricLabel {
+    font-family: var(--font-mono), monospace;
+    font-size: 10px;
+    color: var(--ink-tertiary);
+  }
+  
+  .metricValue {
+    font-family: var(--font-mono), monospace;
+    font-size: 13px;
+    color: var(--ink-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  
+  .battBar {
+    flex: 1;
+    height: 4px;
+    background: var(--wire);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  
+  .battFill {
+    height: 100%;
+    transition: width 1s ease-out;
+  }
+  
+  .cardActions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: auto;
+    border-top: 1px solid var(--wire-soft);
+    padding-top: var(--space-4);
+  }
+  
+  .btnSecondary {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    background: var(--control-bg);
+    border: 1px solid var(--control-border);
+    color: var(--ink-primary);
+    font-size: 13px;
+    font-weight: 500;
+    padding: var(--space-2) 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  .btnSecondary:hover:not(:disabled) {
+    background: var(--wire-soft);
+    border-color: var(--wire-emphasis);
+  }
+  .btnSecondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .btnIcon {
+    width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--control-bg);
+    border: 1px solid var(--control-border);
+    color: var(--ink-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--duration-fast) var(--ease-out);
+  }
+  .btnIcon:hover {
+    background: var(--hud-cyan-mute);
+    color: var(--hud-cyan);
+    border-color: var(--hud-cyan);
+  }
