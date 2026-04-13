@@ -3,10 +3,9 @@
 import React from "react";
 import { TBox } from "./layout/TBox";
 
-export const HSICompass = ({ yaw }: { yaw: number }) => {
-  return (
-    <TBox title="SYS HSI COMPASS" color="var(--hud-cyan)">
-       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "220px" }}>
+export const HSICompass = ({ yaw, isMini = false }: { yaw: number; isMini?: boolean }) => {
+  const compassContent = (
+       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: isMini ? "180px" : "220px" }}>
           <div style={{ width: "180px", height: "180px", borderRadius: "50%", border: "2px solid rgba(0, 229, 204, 0.3)", position: "relative" }}>
              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 24, height: 24, zIndex: 10 }}>
                <svg viewBox="0 0 24 24" fill="none" stroke="var(--telemetry-green)" strokeWidth="2"><path d="M12 2v20m-7-7l7-7 7 7"/></svg>
@@ -27,6 +26,13 @@ export const HSICompass = ({ yaw }: { yaw: number }) => {
              </div>
           </div>
        </div>
+  );
+
+  if (isMini) return compassContent;
+
+  return (
+    <TBox title="SYS HSI COMPASS" color="var(--hud-cyan)">
+       {compassContent}
        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "4px", marginTop: "10px" }}>
          {[
            {l: "RUMBO", v: yaw.toFixed(1), c: "var(--telemetry-green)"},

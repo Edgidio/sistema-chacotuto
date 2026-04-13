@@ -3,7 +3,7 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Waypoint } from "../MissionMap/MissionMap";
 
 // Leaflet icon fix for Next.js
@@ -36,11 +36,20 @@ interface TacticalMapLiveProps {
 
 function MapAutoCenter({ center }: { center: [number, number] }) {
   const map = useMap();
+  const [isFollowing, setIsFollowing] = useState(true);
+
   useEffect(() => {
-    if (center[0] !== 0 && center[1] !== 0) {
-      map.setView(center, map.getZoom());
+    const handleDrag = () => setIsFollowing(false);
+    map.on("dragstart", handleDrag);
+    return () => { map.off("dragstart", handleDrag); }
+  }, [map]);
+
+  useEffect(() => {
+    if (isFollowing && center[0] !== 0 && center[1] !== 0) {
+      map.setView(center, map.getZoom(), { animate: true, duration: 0.5 });
     }
-  }, [center, map]);
+  }, [center, map, isFollowing]);
+
   return null;
 }
 

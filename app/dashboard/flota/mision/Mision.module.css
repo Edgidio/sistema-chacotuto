@@ -1,0 +1,306 @@
+/* ====================================================
+   Mission Planning Console
+   ==================================================== */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--void);
+}
+
+.content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* --- Planner Sidebar --- */
+.sidebar {
+  width: 320px;
+  background: var(--panel);
+  border-right: 1px solid var(--wire);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-4);
+  z-index: 10;
+}
+
+.sectionTitle {
+  font-family: var(--font-mono), monospace;
+  font-size: 10px;
+  color: var(--ink-tertiary);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.hintBox {
+  background: var(--instrument);
+  border: 1px dashed var(--wire-emphasis);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-6);
+}
+
+.hintText {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* --- Task Cards (Waypoints) --- */
+.taskCard {
+  background: var(--void);
+  border: 1px solid var(--wire);
+  border-left: 4px solid var(--hud-cyan);
+  padding: var(--space-5);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  transition: all 0.2s;
+}
+
+.taskCardHome {
+  border-left-color: var(--telemetry-green);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.cardTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-primary);
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 0.5px;
+}
+
+.removeBtn {
+  background: transparent;
+  border: none;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeBtn:hover {
+  background: var(--instrument);
+  color: var(--telemetry-red);
+}
+
+/* --- Form Fields --- */
+.fieldRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.label {
+  font-size: 10px;
+  color: var(--ink-tertiary);
+  width: 60px;
+  font-family: var(--font-mono), monospace;
+}
+
+.input {
+  flex: 1;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  color: var(--ink-primary);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: var(--font-mono), monospace;
+  outline: none;
+}
+
+.input:focus {
+  border-color: var(--hud-cyan);
+  background: var(--instrument);
+}
+
+.select {
+  flex: 1;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  color: var(--ink-primary);
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: var(--font-mono), monospace;
+  cursor: pointer;
+}
+
+/* --- Main Map Area --- */
+.mapArea {
+  flex: 1;
+  position: relative;
+}
+
+/* --- Success Overlay (HUD Overlay) --- */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 4, 10, 0.6);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  width: 440px;
+  background: var(--panel);
+  border: 1px solid var(--wire-emphasis);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+.modalHeader {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--wire);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: rgba(34, 197, 94, 0.03);
+}
+
+.pulsar {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--telemetry-green);
+  box-shadow: 0 0 12px var(--telemetry-green);
+  animation: pulse 2s infinite;
+}
+
+.modalTitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--telemetry-green);
+  font-family: var(--font-mono), monospace;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.modalBody {
+  padding: var(--space-6) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.modalText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+
+.statusLog {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px dashed var(--wire);
+  padding: var(--space-4);
+  border-radius: var(--radius-sm);
+}
+
+.logLine {
+  font-size: 11px;
+  color: var(--telemetry-green);
+  font-family: var(--font-mono), monospace;
+  display: block;
+  margin-bottom: 6px;
+  opacity: 0.8;
+}
+
+.modalFooter {
+  padding: var(--space-4) var(--space-5);
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--wire);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.finishBtn {
+  background: var(--hud-cyan);
+  border: none;
+  color: var(--void);
+  padding: 10px 24px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-family: var(--font-mono), monospace;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.finishBtn:hover {
+  background: var(--ink-primary);
+  transform: translateY(-1px);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* --- Control Buttons in Sidebar --- */
+.actionBtns {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.resetBtn {
+  background: var(--instrument);
+  border: 1px solid var(--wire);
+  color: var(--ink-secondary);
+  padding: 0 var(--space-3);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  height: 32px;
+}
+
+.dispatchBtn {
+  background: var(--hud-cyan-mute);
+  border: 1px solid var(--hud-cyan);
+  color: var(--hud-cyan);
+  padding: 0 var(--space-4);
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dispatchBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}

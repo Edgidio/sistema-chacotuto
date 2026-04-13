@@ -53,11 +53,7 @@ export default function DroneTacticalNav({ pitch, roll, yaw }: { pitch: number; 
   return (
     <div style={{ height: "260px", background: "#030712", borderRadius: "4px", overflow: "hidden", position: "relative", border: "1px solid var(--wire)", width: "100%", flex: 1 }}>
 
-      {/* LETRAS CARDINALES FLOTANTES EN HTML */}
-      <div style={{ position: "absolute", top: "15px", left: "50%", transform: "translateX(-50%)", color: "#f97316", fontFamily: "var(--font-mono)", fontSize: "20px", fontWeight: "bold", zIndex: 10, pointerEvents: "none", textShadow: "0px 0px 8px rgba(0,0,0,0.8)" }}>N</div>
-      <div style={{ position: "absolute", bottom: "35px", left: "50%", transform: "translateX(-50%)", color: "#f97316", fontFamily: "var(--font-mono)", fontSize: "20px", fontWeight: "bold", zIndex: 10, pointerEvents: "none", textShadow: "0px 0px 8px rgba(0,0,0,0.8)" }}>S</div>
-      <div style={{ position: "absolute", top: "50%", right: "15px", transform: "translateY(-50%)", color: "#f97316", fontFamily: "var(--font-mono)", fontSize: "20px", fontWeight: "bold", zIndex: 10, pointerEvents: "none", textShadow: "0px 0px 8px rgba(0,0,0,0.8)" }}>E</div>
-      <div style={{ position: "absolute", top: "50%", left: "15px", transform: "translateY(-50%)", color: "#f97316", fontFamily: "var(--font-mono)", fontSize: "20px", fontWeight: "bold", zIndex: 10, pointerEvents: "none", textShadow: "0px 0px 8px rgba(0,0,0,0.8)" }}>O</div>
+      {/* LETRAS CARDINALES ELIMINADAS POR SOLICITUD */}
 
       <ErrorBoundary FallbackComponent={FallbackError}>
         <Canvas camera={{ position: [0, 4, 10], fov: 40 }}>

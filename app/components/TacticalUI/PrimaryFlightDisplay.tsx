@@ -2,73 +2,57 @@
 
 import React, { useEffect, useRef } from "react";
 
-export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pitch: number; roll: number; speed: number; altitude: number; yaw: number }) => {
+export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw, gps }: { pitch: number; roll: number; speed: number; altitude: number; yaw: number; gps?: { lat: number; lng: number; alt?: number } }) => {
   // Thresholds for critical status (Adjusted for "tolerable" sensitivity)
   const isCritical = Math.abs(pitch) > 20 || Math.abs(roll) > 30;
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/Sonido De Alarma Detector De Humos.mp3");
-        audioRef.current.loop = true;
-      }
-
+    if (audioRef.current) {
       if (isCritical) {
-        audioRef.current.play().catch(err => console.log("Audio play blocked by browser:", err));
+        audioRef.current.play().catch(err => console.log("Audio play blocked:", err));
       } else {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
     }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
   }, [isCritical]);
   
   // Format data
   const speedStr = speed.toFixed(1);
   const altStr = altitude.toFixed(1);
   const yawStr = Math.round(yaw).toString().padStart(3, '0') + "°";
+  const latStr = gps?.lat?.toFixed(7) || "0.0000000";
+  const lngStr = gps?.lng?.toFixed(7) || "0.0000000";
   
   return (
     <div style={{ 
-      flex: 1, background: "#0284c7", borderRadius: "8px", border: `2px solid ${isCritical ? "#ef4444" : "var(--hud-cyan)"}`,
-      position: "relative", overflow: "hidden", fontFamily: "var(--font-mono)", userSelect: "none",
-      transition: "border-color 0.3s ease"
+      flex: 1, background: "#0284c7", borderRadius: "8px", border: "2px solid var(--hud-cyan)",
+      position: "relative", overflow: "hidden", fontFamily: "var(--font-mono)", userSelect: "none"
     }}>
-      
-      {/* CRITICAL ALERT OVERLAY */}
+
+      {/* AUDIO ELEMENT */}
+      <audio ref={audioRef} src="/Sonido De Alarma Detector De Humos.mp3" preload="auto" loop />
+
+      {/* CRITICAL ALERT OVERLAY (Estático por encima de todo) */}
       {isCritical && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 100,
-          background: "radial-gradient(circle, transparent 40%, rgba(239, 68, 68, 0.4) 100%)",
-          boxShadow: "inset 0 0 100px rgba(239, 68, 68, 0.6)",
-          animation: "pulse-red 1s infinite alternate",
+          background: "radial-gradient(circle at center, transparent 35%, rgba(239, 68, 68, 0.75) 100%)",
           pointerEvents: "none"
         }} />
       )}
-
-      <style>{`
-        @keyframes pulse-red {
-          from { opacity: 0.4; }
-          to { opacity: 0.8; }
-        }
-      `}</style>
       
       {/* =========================================
           ZONA C: HORIZONTE ARTIFICIAL (LAYER FONDO MÓVIL)
          ========================================= */}
       <div style={{
         position: "absolute", top: "50%", left: "-50%", right: "-50%", height: "400%",
-        transform: `translateY(calc(-50% + ${pitch}px)) rotate(${-roll}deg)`, 
+        transform: `translateY(calc(-50% + ${pitch * 5}px)) rotate(${roll}deg)`, 
         transformOrigin: "center center", transition: "transform 0.1s linear"
       }}>
+
         {/* Sky (Azul Cielo Brillante) */}
         <div style={{ height: "50%", width: "100%", background: "#0ea5e9", position: "relative" }}>
            {[10, 20, 30, 40].map(p => (
@@ -148,36 +132,8 @@ export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pi
 
 
       {/* =========================================
-          ZONA A: INDICADOR EKF Y G-LOAD (ARRIBA IZQUIERDA)
+          ZONA A: INDICADOR EKF Y G-LOAD (ELIMINADO POR SOLICITUD)
          ========================================= */}
-      <div style={{ position: "absolute", top: 15, left: 95, zIndex: 20 }}>
-         {/* Badge EKF con su punto */}
-         <div style={{ display: "inline-flex", alignItems: "center", gap: "4px", background: "rgba(255, 255, 255, 0.9)", color: "black", fontSize: "10px", fontWeight: "bold", padding: "2px 6px", borderRadius: "4px", marginBottom: "4px" }}>
-           <div style={{ width: 4, height: 4, background: "#10b981", borderRadius: "50%" }}/> EKF
-         </div>
-         
-         <div style={{ background: "rgba(30, 58, 138, 0.8)", border: "1px solid #38bdf8", borderRadius: "8px", padding: "8px", width: "110px", boxShadow: "0 4px 10px rgba(0,0,0,0.5)" }}>
-            {/* Titulo G-LOAD */}
-            <div style={{ fontSize: "10px", color: "white", display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }}/> G-LOAD
-            </div>
-            
-            {/* Numero Grande */}
-            <div style={{ fontSize: "20px", color: "white", fontWeight: "bold", background: "#1e3a8a", border: "1px solid #38bdf8", borderRadius: "4px", textAlign: "center", padding: "4px", marginBottom: "6px" }}>
-               1.02G
-            </div>
-            
-            {/* Barra de Progreso Interna (Verde/Azul) */}
-            <div style={{ height: "6px", width: "100%", background: "rgba(255,255,255,0.2)", borderRadius: "3px", position: "relative" }}>
-               <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "65%", background: "linear-gradient(90deg, #10b981, #38bdf8)", borderRadius: "3px" }} />
-            </div>
-            
-            {/* Labels Laterales Bar */}
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px", color: "#60a5fa", marginTop: "4px", fontWeight: "bold" }}>
-               <span>+1.2</span><span>0.7</span>
-            </div>
-         </div>
-      </div>
 
       {/* =========================================
           ZONA D: INDICADORES DEL MONITOR (ARRIBA DERECHA)
@@ -189,92 +145,109 @@ export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pi
       </div>
 
       {/* =========================================
-          ZONA B: CINTA DE VELOCIDAD Y BARRA AoA/G-LOAD
+          ZONA B: CINTA DE VELOCIDAD Y BARRA AoA
          ========================================= */}
+      {/* Fondo estético */}
       <div style={{
          position: "absolute", left: 0, top: "10%", bottom: "15%", width: "80px",
-         background: "rgba(15, 23, 42, 0.7)", borderRight: "2px solid rgba(255,255,255,0.2)",
-         display: "flex", zIndex: 20
+         background: "rgba(15, 23, 42, 0.7)", borderRight: "2px solid rgba(255,255,255,0.2)", zIndex: 9
+      }} />
+      
+      {/* Contenedor de escala - Ocupa 100% de alto para asegurar simetría espacial, pero usa clip-path para no salirse */}
+      <div style={{
+         position: "absolute", left: 0, top: 0, bottom: 0, width: "80px",
+         clipPath: "inset(10% 0 15% 0)", zIndex: 10
       }}>
-         {/* BARRA EXTERNA G-LOAD/AoA (A la izquierda de la cinta de vel) */}
+         {/* BARRA EXTERNA AoA */}
          <div style={{ width: "12px", position: "absolute", left: "10px", top: "10%", bottom: "10%", display: "flex", flexDirection: "column", alignItems: "center" }}>
             <div style={{ fontSize: "8px", color: "white", marginBottom: "4px" }}>AOA</div>
             <div style={{ flex: 1, width: "100%", background: "linear-gradient(180deg, #4ade80 0%, #facc15 50%, #ef4444 100%)", borderRadius: "10px", border: "1px solid rgba(0,0,0,0.5)", position: "relative" }}>
-               {/* Triangulo Blanco selector */}
                <div style={{ position: "absolute", right: "-4px", top: "70%", width: 0, height: 0, borderTop: "4px solid transparent", borderBottom: "4px solid transparent", borderRight: "6px solid white" }} />
             </div>
             <div style={{ fontSize: "8px", color: "white", marginTop: "4px", fontWeight: "bold" }}>0.1°</div>
          </div>
 
-         {/* CINTA DE VELOCIDAD DINÁMICA */}
-         <div style={{ 
-           position: "absolute", right: "5px", top: "calc(50% - 10px)",
-           display: "flex", flexDirection: "column", gap: "40px",
-           color: "white", fontSize: "14px", fontWeight: "bold",
-           transform: `translateY(${speed * 4}px)`,
-           transition: "transform 0.1s linear"
-         }}>
-           {[100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0].map(s => (
-             <span key={s} style={{ height: "20px", textAlign: "right", color: isCritical ? "#ef4444" : "white" }}>{s}</span>
-           ))}
-         </div>
+         {/* CINTA DE VELOCIDAD DINÁMICA ABSOLUTA */}
+         {[...Array(21)].map((_, i) => {
+            const baseSpeed = Math.floor(speed / 10) * 10;
+            const s = baseSpeed + (i - 10) * 10;
+            if (s < 0) return null; // No hay velocidad negativa
+            const offsetY = (speed - s) * 6; // 10 unidades vel = 60px -> 6px/unidad
+            
+            return (
+               <div key={`spd-${s}`} style={{ 
+                 position: "absolute", right: "8px", top: "50%", 
+                 transform: `translateY(calc(-50% + ${offsetY}px))`,
+                 color: isCritical ? "#ef4444" : "white", fontSize: "14px", fontWeight: "bold", textAlign: "right"
+               }}>
+                 {s}
+               </div>
+            );
+         })}
+      </div>
 
-         {/* GREEN BOX CURRENT VALUE */}
-         <div style={{
-            position: "absolute", right: "-10px", top: "50%", transform: "translateY(-50%)",
-            background: "#111827", border: "2px solid #4ade80", padding: "6px 8px 6px 12px",
-            color: "#4ade80", fontSize: "18px", fontWeight: "bold", zIndex: 25,
-            boxShadow: "0 0 10px rgba(0,0,0,0.8)", display: "flex", alignItems: "center", gap: "6px"
-         }}>
-            {/* Flechita Up verde adentro */}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-            <span>{speedStr}</span>
-         </div>
+      {/* GREEN BOX CURRENT VALUE PARA VELOCIDAD (IZQUIERDA) */}
+      <div style={{
+         position: "absolute", left: "70px", top: "50%", transform: "translateY(-50%)",
+         background: "#111827", border: "2px solid #bef264", padding: "6px 8px 6px 12px",
+         color: "#bef264", fontSize: "18px", fontWeight: "bold", zIndex: 25,
+         boxShadow: "0 0 10px rgba(0,0,0,0.8)", display: "flex", alignItems: "center", gap: "6px"
+      }}>
+         {/* Flechita Up verde adentro */}
+         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#bef264" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+         <span>{speedStr}</span>
       </div>
 
       {/* =========================================
-          ZONA E: CINTA DE ALTITUD
+          ZONA E Y F: CINTA DE ALTITUD Y CAJA CENTRAL (DERECHA)
          ========================================= */}
+      {/* Fondo Estético de la Cinta */}
       <div style={{
          position: "absolute", right: 0, top: "10%", bottom: "15%", width: "80px",
-         background: "rgba(15, 23, 42, 0.7)", borderLeft: "2px solid rgba(255,255,255,0.2)",
-         display: "flex", justifyContent: "flex-end", zIndex: 20
+         background: "rgba(15, 23, 42, 0.7)", borderLeft: "2px solid rgba(255,255,255,0.2)", zIndex: 9
+      }} />
+
+      {/* Contenedor infinito con center line asegurado */}
+      <div style={{
+         position: "absolute", right: 0, top: 0, bottom: 0, width: "80px",
+         clipPath: "inset(10% 0 15% 0)", zIndex: 10
       }}>
-         {/* GREEN BOX CURRENT VALUE */}
-         <div style={{
-             position: "absolute", left: "-10px", top: "50%", transform: "translateY(-50%)",
-             background: "#111827", border: "2px solid #4ade80", padding: "6px 12px",
-             color: "#4ade80", fontSize: "18px", fontWeight: "bold", zIndex: 25,
-             boxShadow: "0 0 10px rgba(0,0,0,0.8)"
-         }}>
-            {altStr}
-         </div>
+         {/* CINTA DE ALTITUD DINÁMICA ABSOLUTA */}
+         {[...Array(21)].map((_, i) => {
+            const baseAlt = Math.floor(altitude / 100) * 100;
+            const a = baseAlt + (i - 10) * 100;
+            const offsetY = (altitude - a) * 0.6; // 100 altitud = 60px -> 0.6px/unidad
+            
+            return (
+               <div key={`alt-${a}`} style={{ 
+                 position: "absolute", left: "12px", top: "50%", 
+                 transform: `translateY(calc(-50% + ${offsetY}px))`,
+                 color: isCritical ? "#ef4444" : "white", fontSize: "14px", fontWeight: "bold", textAlign: "left"
+               }}>
+                 {a}
+               </div>
+            );
+         })}
+      </div>
 
-         {/* Tick Marks Right Side */}
-         <div style={{ width: "6px", borderRight: "2px solid rgba(255,255,255,0.4)" }} />
-         
-         {/* CINTA DE ALTITUD DINÁMICA */}
-         <div style={{
-           flex: 1, display: "flex", flexDirection: "column", gap: "40px",
-           padding: "10px 4px", color: "white", fontSize: "14px", fontWeight: "bold", textAlign: "right",
-           position: "absolute", right: "12px", top: "calc(50% - 10px)",
-           transform: `translateY(${altitude * 1}px)`,
-           transition: "transform 0.1s linear"
-         }}>
-           {[500, 400, 300, 200, 100, 0, -100, -200, -300].map(a => (
-             <span key={a} style={{ height: "20px", color: isCritical ? "#ef4444" : "white" }}>{a}</span>
-           ))}
-         </div>
+      {/* GREEN BOX CURRENT VALUE PARA ALTITUD */}
+      <div style={{
+          position: "absolute", right: "70px", top: "50%", transform: "translateY(-50%)",
+          background: "#111827", border: "2px solid #4ade80", padding: "6px 12px",
+          color: "#4ade80", fontSize: "18px", fontWeight: "bold", zIndex: 25,
+          boxShadow: "0 0 10px rgba(0,0,0,0.8)"
+      }}>
+         {altStr}
+      </div>
 
-         {/* Caja Red Extra BOTTOM RIGHT (BUS 5.09V) */}
-         <div style={{ position: "absolute", bottom: -20, right: 10, display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>
-               <span>1013</span> <span style={{ color: "#ef4444" }}>-0.3</span>
-            </div>
-            <div style={{ background: "rgba(220, 38, 38, 0.9)", border: "1px solid #fca5a5", padding: "4px", borderRadius: "4px", color: "white", fontSize: "10px", fontWeight: "bold", textAlign: "center" }}>
-               <div>BUS</div>
-               <div>5.09 V</div>
-            </div>
+      {/* Caja Red Extra (BUS 5.09V) */}
+      <div style={{ position: "absolute", bottom: "10%", right: "10px", display: "flex", flexDirection: "column", alignItems: "flex-end", zIndex: 30 }}>
+         <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "10px", color: "white", fontWeight: "bold", marginBottom: "4px" }}>
+            <span>1013</span> <span style={{ color: "#ef4444" }}>-0.3</span>
+         </div>
+         <div style={{ background: "rgba(220, 38, 38, 0.9)", border: "1px solid #fca5a5", padding: "4px", borderRadius: "4px", color: "white", fontSize: "10px", fontWeight: "bold", textAlign: "center" }}>
+            <div>BUS</div>
+            <div>5.09 V</div>
          </div>
       </div>
 
@@ -288,8 +261,8 @@ export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pi
          </div>
          <div style={{ padding: "8px", fontSize: "11px", color: "white", display: "grid", gap: "3px", lineHeight: 1.4 }}>
             <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>ESTADO</span> <span style={{color:"#4ade80"}}>FIJO 3D OK</span></div>
-            <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>LAT</span> -007.5618468°</div>
-            <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>LON</span> -025.6592220°</div>
+            <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>LAT</span> {latStr}°</div>
+            <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>LON</span> {lngStr}°</div>
             <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>HDOP</span> 1.13</div>
             <div><span style={{color:"#fbbf24", width:"45px", display:"inline-block"}}>SATS</span> 9</div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -312,23 +285,23 @@ export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pi
            <div style={{ width: 60, height: 4, background: "#4ade80", borderRadius: 4 }} />
          </div>
          <div style={{ padding: "8px", fontSize: "11px", color: "white", display: "grid", gap: "3px", lineHeight: 1.4 }}>
-            <div style={{ color: "rgba(255,255,255,0.4)" }}>FASE: TIERRA</div>
-            <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>ALT</span> -3.1 m</div>
+            <div style={{ color: "rgba(255,255,255,0.4)" }}>FASE: VUELO</div>
+            <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>ALT</span> {altStr} m</div>
             <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>V/S</span> -0.28 m/s</div>
             <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>FUERZA-G</span> 1.02 G</div>
             <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>AOA</span> <span style={{color: "#fbbf24"}}>+0.1°</span></div>
             <div><span style={{color:"#86efac", width:"50px", display:"inline-block"}}>MACH</span> <span style={{color: "#38bdf8"}}>0.003</span></div>
-            <div style={{ color: "var(--ink-secondary)", fontSize: "10px", marginTop: "4px" }}>VEL. TIERRA 1.1 km/h</div>
+            <div style={{ color: "var(--ink-secondary)", fontSize: "10px", marginTop: "4px" }}>VEL. TIERRA {speedStr} km/h</div>
          </div>
       </div>
 
       {/* =========================================
           ZONA H: COMPASS TAPE INFERIOR
          ========================================= */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "35px", background: "rgba(15, 23, 42, 0.9)", borderTop: "2px solid rgba(255,255,255,0.2)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 25, overflow: "hidden" }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "35px", background: "rgba(15, 23, 42, 0.9)", borderTop: "2px solid rgba(255,255,255,0.2)", zIndex: 25, overflow: "hidden" }}>
          
          {/* Cuadro Rojo RA 0 Superior */}
-         <div style={{ position: "absolute", bottom: 42, display: "flex", flexDirection: "column", alignItems: "center" }}>
+         <div style={{ position: "absolute", bottom: "100%", left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", paddingBottom: "7px" }}>
             <div style={{ background: "rgba(220,38,38,0.8)", border: "1px solid white", padding: "2px 8px", borderRadius: "12px", color: "white", fontSize: "10px", fontWeight: "bold" }}>RA 0</div>
             <div style={{ color: "white", fontSize: "10px", textShadow: "0 0 2px black", marginTop: "2px" }}>(-0.4A°+0.2A°)</div>
          </div>
@@ -338,15 +311,15 @@ export const PrimaryFlightDisplay = ({ pitch, roll, speed, altitude, yaw }: { pi
          
          {/* Caja central Verde de Ground Speed */}
          <div style={{ position: "absolute", bottom: "4px", left: "50%", transform: "translateX(-50%)", background: "#bef264", padding: "2px 16px", borderRadius: "4px", color: "black", fontSize: "14px", fontWeight: "bold", zIndex: 26 }}>
-            1.1
+            {speedStr}
          </div>
 
          {/* CINTA DE RUMBO DINÁMICA (COMPASS TAPE) */}
          <div style={{ 
+           position: "absolute", left: "50%", top: 0, bottom: 0,
            display: "flex", gap: "50px", color: "white", fontSize: "12px", fontWeight: "bold", alignItems: "center",
-           transform: `translateX(${-yaw * 2}px)`,
-           transition: "transform 0.1s linear",
-           paddingLeft: "50%" // Centro inicial en 0
+           transform: `translateX(calc(${-yaw * 3}px - 20px))`, // 20px es la mitad del minWidth para centrar exactamente el origen
+           transition: "transform 0.1s linear"
          }}>
            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420].map(n => {
              const deg = n % 360;

@@ -22,6 +22,7 @@ import {
   getToken,
   getUser,
   clearAuth,
+  isTokenValid,
 } from "../lib/auth";
 
 interface AuthContextValue {
@@ -71,22 +72,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  // --- Route protection ---
+  // --- Route protection & Content Guard ---
   useEffect(() => {
-    if (isLoading) return; // Don't redirect while still hydrating
+    if (isLoading) return;
 
-    const isDashboard = pathname.startsWith("/dashboard");
-    const isLogin = pathname === "/login";
-    const isRoot = pathname === "/";
+    const isLoginPath = pathname === "/login";
+    const isRootPath = pathname === "/";
+    // Define private routes (anything that starts with /dashboard or /visor-vuelo)
+    const isPrivatePath = pathname.startsWith("/dashboard") || pathname.startsWith("/visor-vuelo");
 
-    if (!token && (isDashboard || isRoot)) {
-      // Not authenticated → kick to login
+    if (!token && (isPrivatePath || isRootPath)) {
       router.replace("/login");
-    } else if (token && (isLogin || isRoot)) {
-      // Already authenticated → send to dashboard
+    } else if (token && (isLoginPath || isRootPath)) {
       router.replace("/dashboard");
     }
   }, [isLoading, token, pathname, router]);
+
+  // Determine if we should show the content or a loader
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isVisor = pathname.startsWith("/visor-vuelo");
+  const isLogin = pathname === "/login";
+  const isRootPath = pathname === "/";
+
+  // Logic to prevent content flicker
+  const shouldShowContent = 
+    !isLoading && !isRootPath && (
+      (token && (isDashboard || isVisor)) ||
+      (!token && isLogin) ||
+      (!isDashboard && !isVisor && !isLogin) // Other neutral paths
+    );
 
   // --- Login ---
   const login = useCallback(
@@ -107,6 +121,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     router.replace("/login");
   }, [router]);
+
+  if (!shouldShowContent) {
+    return (
+      <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#05070a", color: "#00e5cc" }}>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", fontFamily: "monospace", fontSize: "12px", letterSpacing: "1px" }}>
+          <div className="spinner" style={{ width: "16px", height: "16px", border: "2px solid rgba(0, 229, 204, 0.2)", borderTopColor: "#00e5cc", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <span>AUTENTICANDO SISTEMA...</span>
+        </div>
+        <style>{`
+          @keyframes spin { to { transform: rotate(360deg); } }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>

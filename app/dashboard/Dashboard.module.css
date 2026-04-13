@@ -1,0 +1,348 @@
+/* ====================================================
+   Dashboard — Centro de Operaciones
+   Replica: 2-column layout with vertical divider,
+   hero metrics, charts, table, progress bars, metric grid
+   ==================================================== */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background: var(--void);
+}
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 340px;
+}
+
+/* ---- LEFT COLUMN ---- */
+.leftCol {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* ---- RIGHT COLUMN ---- */
+.rightCol {
+  border-left: 1px solid var(--wire);
+  padding: var(--space-8) var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+/* ---- Page Title ---- */
+.pageTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0;
+  letter-spacing: -0.8px;
+}
+
+/* === HERO METRICS === */
+.heroRow {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.heroMetric {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--instrument);
+  border: 1px solid var(--wire);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-6);
+  transition: border-color var(--duration-normal) var(--ease-out);
+}
+
+.heroMetric:hover {
+  border-color: var(--wire-emphasis);
+}
+
+.heroLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.heroDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.heroValue {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--ink-primary);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+
+/* === SECTION TITLES === */
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 var(--space-5) 0;
+  letter-spacing: -0.3px;
+}
+
+/* === CHARTS ROW === */
+.chartsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.chartBlock {
+  display: flex;
+  flex-direction: column;
+  background: var(--instrument);
+  border: 1px solid var(--wire);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.chartContainer {
+  flex: 1;
+  min-height: 0;
+}
+
+/* === DONUT LEGEND === */
+.donutLayout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* === TABLE === */
+.tableWrap {
+  width: 100%;
+  background: var(--instrument);
+  border: 1px solid var(--wire);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) 1.2fr 1fr 120px;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--wire-soft);
+  align-items: center;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableHeader .cell {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cell {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+.droneTag {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  color: var(--ink-secondary);
+  letter-spacing: 0.5px;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 100px;
+  letter-spacing: 0.3px;
+}
+
+.pillGreen {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+}
+
+.pillAmber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.pillCyan {
+  background: rgba(0, 229, 204, 0.12);
+  color: #00e5cc;
+}
+
+.pillRed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* === PROGRESS BARS (right column) === */
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  background: var(--instrument);
+  border: 1px solid var(--wire);
+  border-radius: var(--radius-md);
+  padding: var(--space-5);
+}
+
+.progressItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progressLabel {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.progressPct {
+  font-size: 13px;
+  color: var(--ink-primary);
+  font-weight: 700;
+}
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  background: var(--instrument);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 600ms var(--ease-out);
+}
+
+/* === METRIC GRID 2x2 (right column bottom) === */
+.metricGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.metricBlock {
+  padding: var(--space-4);
+  border-left: 4px solid var(--wire);
+  background: var(--instrument);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.metricVal {
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--ink-primary);
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.metricUnit {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-tertiary);
+  margin-left: 3px;
+}
+
+.metricLabel {
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  margin-top: 4px;
+}
+
+/* === EMPTY / LOADING === */
+.emptyState {
+  text-align: center;
+  padding: var(--space-8) var(--space-4);
+  color: var(--ink-muted);
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--instrument) 25%, var(--overlay) 50%, var(--instrument) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 3px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1100px) {
+  .body {
+    grid-template-columns: 1fr;
+  }
+  .rightCol {
+    border-left: none;
+    border-top: 1px solid var(--wire);
+  }
+}
+
+@media (max-width: 640px) {
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+  .heroRow {
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+}

@@ -6,6 +6,8 @@ import useSWR from "swr";
 import dynamic from "next/dynamic";
 import MapWrapper from "../../../components/MissionMap/MapWrapper";
 import { Waypoint } from "../../../components/MissionMap/MissionMap";
+import styles from "./Historial.module.css";
+import TopBar from "../../../components/TopBar/TopBar";
 import { getApiUrl, getToken } from "../../../lib/auth";
 
 interface APIMission {
@@ -42,32 +44,37 @@ interface TelemetryResponse {
 const fetcher = (url: string) => {
   const token = getToken();
   return fetch(url, { headers: { "Authorization": `Bearer ${token}` } }).then((res) => {
-    if (!res.ok) throw new Error("Error fetching");
+    if (!res.ok) throw new Error("Error");
     return res.json();
   });
 };
 
 const DynamicThreeDIndicator = dynamic(() => import("../../../components/ThreeDIndicator/ThreeDIndicator"), {
   ssr: false,
-  loading: () => <div style={{width: "280px", height: "220px", background: "var(--void)", border: "1px solid var(--wire)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--hud-cyan)", fontFamily: "var(--font-mono)", fontSize: "10px"}}>INICIALIZANDO MOTOR 3D...</div>
+  loading: () => <div className={styles.spinner} />
 });
 
 function calculateDistanceAndSpeed(t1: TelemetryPoint, t2: TelemetryPoint) {
   if (!t1 || !t2) return { distance: 0, speed: 0 };
-  const R = 6371e3; // meters
+  const R = 6371e3;
   const f1 = t1.lat * Math.PI/180;
   const f2 = t2.lat * Math.PI/180;
   const df = (t2.lat - t1.lat) * Math.PI/180;
   const dl = (t2.lng - t1.lng) * Math.PI/180;
   const a = Math.sin(df/2) * Math.sin(df/2) + Math.cos(f1) * Math.cos(f2) * Math.sin(dl/2) * Math.sin(dl/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const d = R * c; // distance in meters
-
-  const dt = Math.abs(t2.timestamp - t1.timestamp) / 1000; // seconds
-  const speed = dt > 0 ? (d / dt) : 0; // m/s
-
+  const d = R * c;
+  const dt = Math.abs(t2.timestamp - t1.timestamp) / 1000;
+  const speed = dt > 0 ? (d / dt) : 0;
   return { distance: d, speed };
 }
+
+const STATUS_MAP: Record<string, { label: string, color: string }> = {
+  completed: { label: "Completada", color: "var(--telemetry-green)" },
+  cancelled: { label: "Cancelada", color: "var(--telemetry-red)" },
+  in_progress: { label: "En Vuelo", color: "var(--hud-cyan)" },
+  pending: { label: "Pendiente", color: "var(--telemetry-amber)" },
+};
 
 export default function HistorialClient({ droneId }: { droneId: string }) {
   const [selectedMission, setSelectedMission] = useState<APIMission | null>(null);
@@ -78,7 +85,7 @@ export default function HistorialClient({ droneId }: { droneId: string }) {
   const [totalDistance, setTotalDistance] = useState(0);
   const [elapsedTimeStr, setElapsedTimeStr] = useState("00:00");
 
-  const { data, error, isLoading } = useSWR<MissionsResponse>(
+  const { data, isLoading } = useSWR<MissionsResponse>(
     `${getApiUrl()}/api/missions?droneId=${droneId}`,
     fetcher
   );
@@ -119,22 +126,16 @@ export default function HistorialClient({ droneId }: { droneId: string }) {
             return prev;
           }
           const next = prev + 1;
-          
-          if (next > 0) {
-             const t1 = telemetryList[next - 1];
-             const t2 = telemetryList[next];
-             const { distance, speed } = calculateDistanceAndSpeed(t1, t2);
-             
-             setCurrentSpeed(speed);
-             setTotalDistance(d => d + distance);
-
-             const tStart = telemetryList[0].timestamp;
-             const diffSecs = Math.floor(Math.abs(t2.timestamp - tStart) / 1000);
-             const m = Math.floor(diffSecs / 60).toString().padStart(2, '0');
-             const s = (diffSecs % 60).toString().padStart(2, '0');
-             setElapsedTimeStr(`${m}:${s}`);
-          }
-          
+          const t1 = telemetryList[next - 1];
+          const t2 = telemetryList[next];
+          const { distance, speed } = calculateDistanceAndSpeed(t1, t2);
+          setCurrentSpeed(speed);
+          setTotalDistance(d => d + distance);
+          const tStart = telemetryList[0].timestamp;
+          const diffSecs = Math.floor(Math.abs(t2.timestamp - tStart) / 1000);
+          const m = Math.floor(diffSecs / 60).toString().padStart(2, '0');
+          const s = (diffSecs % 60).toString().padStart(2, '0');
+          setElapsedTimeStr(`${m}:${s}`);
           return next;
         });
       }, 100 / playbackSpeed);
@@ -161,86 +162,72 @@ export default function HistorialClient({ droneId }: { droneId: string }) {
     if (playbackIndex >= telemetryList.length - 1) {
       setPlaybackIndex(0);
       setTotalDistance(0);
-      setCurrentSpeed(0);
       setElapsedTimeStr("00:00");
     }
     setIsPlaying(!isPlaying);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'var(--telemetry-green)';
-      case 'cancelled': return 'var(--telemetry-red)';
-      case 'in_progress': return 'var(--hud-cyan)';
-      case 'pending': return 'var(--telemetry-amber)';
-      default: return 'var(--ink-muted)';
-    }
-  };
+  const shortId = droneId.split('-')[0].toUpperCase() + '...' + droneId.split('-').pop()?.slice(-4).toUpperCase();
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <header style={{ 
-        display: "flex", alignItems: "center", justifyContent: "space-between", 
-        padding: "var(--space-4) var(--space-6)", borderBottom: "1px solid var(--wire)", background: "var(--void)"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-          <Link href="/dashboard/flota" style={{ color: "var(--ink-primary)", textDecoration: "none", fontSize: "14px", fontWeight: 500, padding: "6px 12px", border: "1px solid var(--wire)", borderRadius: "var(--radius-sm)" }}>
-            &larr; Volver
-          </Link>
-          <div style={{ width: "1px", height: "24px", background: "var(--wire)" }} />
-          <div>
-            <h2 style={{ fontSize: "16px", fontWeight: 600, color: "var(--ink-primary)", margin: 0 }}>Historial de Misiones (Black Box)</h2>
-            <p style={{ fontSize: "12px", color: "var(--ink-tertiary)", margin: "4px 0 0", fontFamily: "var(--font-mono)" }}>
-              UNIDAD: <span style={{ color: "var(--hud-cyan)" }}>{droneId}</span>
-            </p>
-          </div>
-        </div>
-      </header>
+    <div className={styles.container}>
+      <TopBar 
+        title="Registro de caja negra" 
+        unit={selectedMission ? `MISN-${selectedMission.missionId.slice(-4).toUpperCase()}` : `UNIDAD-${droneId.slice(-4).toUpperCase()}`}
+        backHref="/dashboard/flota"
+      />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <aside style={{ 
-          width: "320px", background: "var(--surface-flat)", borderRight: "1px solid var(--wire)",
-          display: "flex", flexDirection: "column", overflowY: "auto"
-        }}>
-          {isLoading ? (
-            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--ink-tertiary)", fontFamily: "var(--font-mono)", fontSize: "11px" }}>CARGANDO...</div>
-          ) : missions.length === 0 ? (
-            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--ink-muted)", fontSize: "13px" }}>Sin Registros de Vuelo</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              {missions.map(mission => (
-                <button
-                  key={mission.missionId}
-                  onClick={() => setSelectedMission(mission)}
-                  style={{
-                    display: "flex", flexDirection: "column", gap: "6px", textAlign: "left",
-                    padding: "var(--space-4)", borderBottom: "1px solid var(--wire)",
-                    background: selectedMission?.missionId === mission.missionId ? "rgba(0, 229, 204, 0.05)" : "transparent",
-                    borderLeft: selectedMission?.missionId === mission.missionId ? "3px solid var(--hud-cyan)" : "3px solid transparent",
-                    cursor: "pointer", transition: "all 0.2s"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "12px", fontFamily: "var(--font-mono)", color: "var(--ink-primary)", fontWeight: 600 }}>
-                      {mission.missionId.split("-")[1]?.toUpperCase() || mission.missionId}
-                    </span>
-                    <span style={{ 
-                      fontSize: "9px", fontFamily: "var(--font-mono)", padding: "2px 6px", borderRadius: "2px",
-                      color: getStatusColor(mission.status), border: `1px solid ${getStatusColor(mission.status)}4010`,
-                      backgroundColor: `${getStatusColor(mission.status)}10`
-                    }}>
-                      {mission.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "11px", color: "var(--ink-tertiary)" }}>FECHA: {new Date(mission.createdAt).toLocaleString('es-VE')}</div>
-                  <div style={{ fontSize: "11px", color: "var(--ink-muted)" }}>Waypoints: {mission.waypoints?.length || 0}</div>
-                </button>
-              ))}
-            </div>
-          )}
+      <div className={styles.content}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarHeader}>Historial de Misiones</div>
+          <div className={styles.missionList}>
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className={styles.missionCard} style={{ opacity: 0.5 }}>
+                  <div className={styles.spinner} />
+                </div>
+              ))
+            ) : missions.length === 0 ? (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyIcon}>📂</div>
+                <div className={styles.emptyText}>SIN REGISTROS DE VUELO DISPONIBLES</div>
+              </div>
+            ) : (
+              missions.map(mission => {
+                const status = STATUS_MAP[mission.status] || { label: mission.status, color: "var(--ink-muted)" };
+                const date = new Date(mission.createdAt).toLocaleDateString("es-ES", {
+                  day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                });
+                return (
+                  <button
+                    key={mission.missionId}
+                    onClick={() => setSelectedMission(mission)}
+                    className={`${styles.missionCard} ${selectedMission?.missionId === mission.missionId ? styles.missionCardActive : ""}`}
+                  >
+                    <div className={styles.cardHeader}>
+                      <span className={styles.missionName}>MISIÓN #{mission.missionId.slice(-4).toUpperCase()}</span>
+                      <span className={styles.cardStatus} style={{ color: status.color, border: `1px solid ${status.color}30`, background: `${status.color}10` }}>
+                        {status.label}
+                      </span>
+                    </div>
+                    <div className={styles.cardMeta}>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Fecha</span>
+                        <span className={styles.metaVal}>{date}</span>
+                      </div>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>Puntos</span>
+                        <span className={styles.metaVal}>{mission.waypoints?.length || 0}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
         </aside>
 
-        <main style={{ flex: 1, position: "relative" }}>
+        <main className={styles.main}>
           {selectedMission ? (
             <>
               <MapWrapper 
@@ -250,45 +237,66 @@ export default function HistorialClient({ droneId }: { droneId: string }) {
                 replayTrajectory={replayTrajectory}
                 replayDronePosition={replayDronePosition}
               />
-              <div style={{ position: "absolute", top: "var(--space-6)", right: "var(--space-6)", zIndex: 1000 }}>
+              
+              <div className={styles.hudOverlay}>
                 <DynamicThreeDIndicator pitch={currentPitch} roll={currentRoll} yaw={currentYaw} />
               </div>
 
-              <div style={{
-                position: "absolute", bottom: "var(--space-6)", left: "50%", transform: "translateX(-50%)",
-                background: "rgba(10, 10, 10, 0.85)", backdropFilter: "blur(8px)",
-                border: "1px solid var(--wire-emphasis)", borderRadius: "var(--radius-md)",
-                padding: "var(--space-4) var(--space-5)", display: "flex", gap: "var(--space-6)", alignItems: "center",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.5)", zIndex: 9999
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  <button onClick={togglePlayback} disabled={isLoadingTelem || telemetryList.length === 0} style={{ width: "40px", height: "40px", borderRadius: "50%", border: "none", cursor: "pointer", background: isPlaying ? "var(--wire-emphasis)" : "var(--hud-cyan)", color: isPlaying ? "var(--ink-primary)" : "var(--control-bg)", display: "flex", alignItems: "center", justifyContent: "center", opacity: (isLoadingTelem || telemetryList.length === 0) ? 0.5 : 1 }}>
-                    {isPlaying ? <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> : <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: "4px" }}><polygon points="5 3 19 12 5 21 5 3"/></svg>}
+              <div className={styles.scrubber}>
+                <div className={styles.playSection}>
+                  <button onClick={togglePlayback} disabled={isLoadingTelem || telemetryList.length === 0} className={styles.playBtn}>
+                    {isPlaying ? 
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> : 
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style={{ marginLeft: "4px" }}><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    }
                   </button>
-                  <div style={{ display: "flex", background: "var(--control-bg)", border: "1px solid var(--wire)", borderRadius: "4px", overflow: "hidden" }}>
-                    {[1, 4, 10].map(speed => <button key={speed} onClick={() => setPlaybackSpeed(speed)} style={{ background: playbackSpeed === speed ? "var(--wire)" : "transparent", color: playbackSpeed === speed ? "var(--ink-primary)" : "var(--ink-muted)", border: "none", padding: "4px 8px", fontSize: "11px", fontFamily: "var(--font-mono)", cursor: "pointer" }}>{speed}x</button>)}
+                  <div className={styles.speedSelector}>
+                    {[1, 4, 10].map(speed => (
+                      <button 
+                        key={speed} 
+                        onClick={() => setPlaybackSpeed(speed)} 
+                        className={`${styles.speedBtn} ${playbackSpeed === speed ? styles.speedBtnActive : ""}`}
+                      >
+                        {speed}x
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <div style={{ width: "1px", height: "32px", background: "var(--wire-soft)" }} />
-                <div style={{ display: "flex", gap: "var(--space-6)" }}>
-                  <div style={{ display: "flex", flexDirection: "column" }}><span style={{ fontSize: "10px", color: "var(--ink-tertiary)", fontFamily: "var(--font-mono)" }}>TIEMPO</span><span style={{ fontSize: "16px", color: "var(--ink-primary)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>{elapsedTimeStr}</span></div>
-                  <div style={{ display: "flex", flexDirection: "column" }}><span style={{ fontSize: "10px", color: "var(--ink-tertiary)", fontFamily: "var(--font-mono)" }}>VELOCIDAD</span><span style={{ fontSize: "16px", color: "var(--text-accent)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>{currentSpeed.toFixed(1)} <span style={{ fontSize: "10px", color: "var(--ink-muted)" }}>m/s</span></span></div>
-                  <div style={{ display: "flex", flexDirection: "column" }}><span style={{ fontSize: "10px", color: "var(--ink-tertiary)", fontFamily: "var(--font-mono)" }}>DISTANCIA</span><span style={{ fontSize: "16px", color: "var(--telemetry-amber)", fontFamily: "var(--font-mono)", fontWeight: 600 }}>{totalDistance.toFixed(0)} <span style={{ fontSize: "10px", color: "var(--ink-muted)" }}>m</span></span></div>
+
+                <div className={styles.statsSection}>
+                  <div className={styles.statBlock}>
+                    <span className={styles.statLabel}>TIEMPO</span>
+                    <span className={styles.statVal}>{elapsedTimeStr}</span>
+                  </div>
+                  <div className={styles.statBlock}>
+                    <span className={styles.statLabel}>VELOCIDAD</span>
+                    <span className={styles.statVal}>{currentSpeed.toFixed(1)} <small style={{ fontSize: "10px", opacity: 0.5 }}>m/s</small></span>
+                  </div>
+                  <div className={styles.statBlock}>
+                    <span className={styles.statLabel}>DISTANCIA</span>
+                    <span className={styles.statVal}>{totalDistance.toFixed(0)} <small style={{ fontSize: "10px", opacity: 0.5 }}>m</small></span>
+                  </div>
                 </div>
-                <div style={{ width: "1px", height: "32px", background: "var(--wire-soft)" }} />
-                <div style={{ display: "flex", flexDirection: "column", minWidth: "120px" }}>
-                   <span style={{ fontSize: "10px", color: "var(--ink-tertiary)", fontFamily: "var(--font-mono)" }}>PROGRESO CAJA NEGRA</span>
-                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-                      <div style={{ flex: 1, height: "4px", background: "var(--wire)", borderRadius: "2px", overflow: "hidden" }}><div style={{ width: `${telemetryList.length > 0 ? (playbackIndex / (telemetryList.length - 1)) * 100 : 0}%`, height: "100%", background: "var(--hud-cyan)", transition: "width 0.2s linear" }} /></div>
-                      <span style={{ fontSize: "11px", color: "var(--ink-muted)", fontFamily: "var(--font-mono)" }}>{playbackIndex}/{telemetryList.length}</span>
-                   </div>
+
+                <div className={styles.progressSection}>
+                  <div className={styles.progressStats}>
+                    <span>REPRODUCCIÓN</span>
+                    <span>{playbackIndex} / {telemetryList.length}</span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div 
+                      className={styles.progressFill} 
+                      style={{ width: `${telemetryList.length > 0 ? (playbackIndex / (telemetryList.length - 1)) * 100 : 0}%` }} 
+                    />
+                  </div>
                 </div>
-                {isLoadingTelem && <div style={{ position: "absolute", top: -30, right: 0, fontSize: "10px", color: "var(--hud-cyan)", fontFamily: "var(--font-mono)" }}>DESCARGANDO TELEMETRÍA...</div>}
+                {isLoadingTelem && <div style={{ position: "absolute", top: -20, right: 20, fontSize: "10px", color: "var(--hud-cyan)", fontFamily: "var(--font-mono)" }}>CARGANDO DATOS...</div>}
               </div>
             </>
           ) : (
-             <div style={{ height: "100%", width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--void)", color: "var(--ink-tertiary)" }}>
-               <div style={{ fontFamily: "var(--font-mono)", fontSize: "12px", letterSpacing: "2px" }}>SELECCIONE UNA MISIÓN PARA VISUALIZAR EL TRAZADO</div>
+             <div className={styles.emptyState}>
+               <div className={styles.emptyIcon}>🛰️</div>
+               <div className={styles.emptyText}>SELECCIONE UNA MISIÓN PARA ANALIZAR LA TELEMETRÍA</div>
              </div>
           )}
         </main>

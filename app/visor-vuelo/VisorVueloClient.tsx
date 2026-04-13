@@ -13,11 +13,14 @@ function useDroneTelemetry(droneId: string) {
     roll: 0,
     yaw: 0,
     altitude: 0,
-    speed: 0, 
+    speed: 0,
     status: "unknown",
     gps: { lat: 0, lng: 0, alt: 0 },
     currentWaypointIndex: 0,
     currentMissionId: "",
+    battery: { level: 0, isCharging: false },
+    isOnline: false,
+    lastSeen: 0,
   });
 
   useEffect(() => {
@@ -27,10 +30,12 @@ function useDroneTelemetry(droneId: string) {
       .then(data => {
         const drone = data.drones?.find((d: any) => d.droneId === droneId);
         if (drone) {
-          setTelemetry(prev => ({ 
-            ...prev, 
+          setTelemetry(prev => ({
+            ...prev,
             status: drone.status,
-            currentMissionId: drone.currentMission || "" 
+            isOnline: drone.isOnline,
+            currentMissionId: drone.currentMission || "",
+            lastSeen: Date.now()
           }));
         }
       })
@@ -39,14 +44,14 @@ function useDroneTelemetry(droneId: string) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    
+
     const token = getToken();
     if (!token) return;
 
     // Convert http(s):// url to ws(s)://
     const baseUrl = getApiUrl();
     const wsUrl = baseUrl.replace(/^http/, "ws") + `/ws/gcs?token=${token}`;
-    
+
     let ws: WebSocket;
     let isConnected = false;
 
@@ -56,12 +61,13 @@ function useDroneTelemetry(droneId: string) {
       ws.onopen = () => {
         console.log("Visor 3D: Conectado al stream de telemetría GCS");
         isConnected = true;
+        setTelemetry(prev => ({ ...prev, isOnline: true }));
       };
 
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          
+
           // Solo actualizamos si el tipo es telemetry y el droneId coincide con nuestro target
           if (data.droneId === droneId) {
             if (data.type === "telemetry") {
@@ -71,17 +77,24 @@ function useDroneTelemetry(droneId: string) {
                 roll: data.orientation?.roll || 0,
                 yaw: data.orientation?.yaw || 0,
                 altitude: data.gps?.alt || 0,
+                speed: data.gps?.vel || data.speed || 0,
+                status: (prev.status === "mission_received" || prev.status === "unknown") ? "in_progress" : prev.status,
                 gps: {
                   lat: data.gps?.lat || 0,
                   lng: data.gps?.lng || 0,
                   alt: data.gps?.alt || 0,
                 },
                 currentWaypointIndex: data.mission?.currentWaypointIndex || 0,
+                battery: data.battery || prev.battery,
+                isOnline: true,
+                lastSeen: Date.now()
               }));
-            } else if (data.type === "drone_status" || data.type === "mission_ack") {
+            } else if (data.type === "drone_status" || data.type === "drone_online" || data.type === "mission_ack" || data.type === "mission_ready") {
               setTelemetry((prev) => ({
                 ...prev,
-                status: data.status,
+                status: (data.type === "mission_ready") ? "in_progress" : (data.status || prev.status),
+                isOnline: true,
+                lastSeen: Date.now(),
                 currentMissionId: data.missionId || prev.currentMissionId,
               }));
             } else if (data.type === "mission_assigned") {
@@ -89,6 +102,11 @@ function useDroneTelemetry(droneId: string) {
                 ...prev,
                 status: "mission_received",
                 currentMissionId: data.missionId,
+              }));
+            } else if (data.type === "drone_offline") {
+              setTelemetry((prev) => ({
+                ...prev,
+                isOnline: false,
               }));
             }
           }
@@ -100,6 +118,7 @@ function useDroneTelemetry(droneId: string) {
       ws.onclose = () => {
         console.log("Visor 3D: Desconectado del stream. Reconectando en 3s...");
         isConnected = false;
+        setTelemetry(prev => ({ ...prev, isOnline: false }));
         setTimeout(connect, 3000);
       };
     };
@@ -130,7 +149,7 @@ export default function VisorVueloClient({ droneId }: { droneId: string }) {
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden", background: "#02040a" }}>
-      <FlightViewer3D 
+      <FlightViewer3D
         droneId={droneId}
         pitch={telemetry.pitch}
         roll={telemetry.roll}
@@ -141,6 +160,8 @@ export default function VisorVueloClient({ droneId }: { droneId: string }) {
         waypoints={waypoints}
         currentWaypointIndex={telemetry.currentWaypointIndex}
         waitingAcceptance={waitingAcceptance}
+        battery={telemetry.battery}
+        isOnline={telemetry.isOnline}
       />
     </div>
   );

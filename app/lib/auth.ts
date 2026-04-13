@@ -109,10 +109,12 @@ export function getUser(): AuthUser | null {
 }
 
 /**
- * Check if an active session exists.
+ * Check if the current session might be invalid (e.g., token format).
  */
-export function isAuthenticated(): boolean {
-  return !!getToken();
+export function isTokenValid(token: string | null): boolean {
+  if (!token) return false;
+  // Basic check: JWT should have 2 dots
+  return token.split(".").length === 3;
 }
 
 /**
@@ -122,4 +124,7 @@ export function clearAuth(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  
+  // Optional: Trigger a storage event to sync other tabs
+  window.dispatchEvent(new Event("storage"));
 }
