@@ -145,6 +145,13 @@ export default function VisorVueloClient({ droneId }: { droneId: string }) {
   );
 
   const waypoints: Waypoint[] = missionData?.mission?.waypoints || [];
+
+  // El backend guarda el punto HOME como campos planos: startLat, startLng, startAlt
+  const mission = missionData?.mission;
+  const startPoint: Waypoint | null =
+    mission?.startLat && mission?.startLng
+      ? { lat: mission.startLat, lng: mission.startLng, alt: mission.startAlt ?? 0, action: "start", index: 0 }
+      : null;
   const waitingAcceptance = telemetry.status === "mission_received" || telemetry.status === "unknown";
 
   return (
@@ -158,6 +165,7 @@ export default function VisorVueloClient({ droneId }: { droneId: string }) {
         speed={telemetry.speed}
         gps={telemetry.gps}
         waypoints={waypoints}
+        startPoint={startPoint}
         currentWaypointIndex={telemetry.currentWaypointIndex}
         waitingAcceptance={waitingAcceptance}
         battery={telemetry.battery}

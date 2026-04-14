@@ -24,10 +24,10 @@ import { TacticalGPSDashboard } from "../TacticalUI/TacticalGPSDashboard";
 
 export default function FlightViewer3D({
   droneId, pitch, roll, yaw, altitude, speed, waitingAcceptance,
-  gps, waypoints, currentWaypointIndex, battery, isOnline
+  gps, waypoints, startPoint, currentWaypointIndex, battery, isOnline
 }: {
   droneId: string; pitch: number; roll: number; yaw: number; altitude: number; speed: number; waitingAcceptance?: boolean;
-  gps?: { lat: number; lng: number }; waypoints?: any[]; currentWaypointIndex?: number;
+  gps?: { lat: number; lng: number }; waypoints?: any[]; startPoint?: any; currentWaypointIndex?: number;
   battery?: { level: number; isCharging: boolean }; isOnline?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState("Cabina");
@@ -254,6 +254,7 @@ export default function FlightViewer3D({
               <TacticalMapLive
                 dronePos={gps || { lat: 0, lng: 0 }}
                 waypoints={waypoints || []}
+                startPoint={startPoint || null}
                 currentWaypointIndex={currentWaypointIndex || 0}
               />
               <div style={{ position: "absolute", top: 15, right: 15, zIndex: 1000, pointerEvents: "none" }}>
@@ -314,6 +315,7 @@ export default function FlightViewer3D({
         ) : activeTab === "GPS" ? (
           <TacticalGPSDashboard 
              droneId={droneId} gps={gps} waypoints={waypoints} 
+             startPoint={startPoint}
              currentWaypointIndex={currentWaypointIndex} 
              speed={speed} altitude={altitude}
           />

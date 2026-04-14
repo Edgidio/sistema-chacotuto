@@ -5,9 +5,9 @@ import TacticalMapLive from "./TacticalMapLive";
 import { Waypoint } from "../MissionMap/MissionMap";
 
 export const TacticalGPSDashboard = ({
-  droneId, gps, waypoints, currentWaypointIndex, speed, altitude
+  droneId, gps, waypoints, startPoint, currentWaypointIndex, speed, altitude
 }: {
-  droneId: string; gps?: { lat: number; lng: number }; waypoints?: Waypoint[]; currentWaypointIndex?: number;
+  droneId: string; gps?: { lat: number; lng: number }; waypoints?: Waypoint[]; startPoint?: Waypoint | null; currentWaypointIndex?: number;
   speed: number; altitude: number;
 }) => {
   return (
@@ -18,6 +18,7 @@ export const TacticalGPSDashboard = ({
         <TacticalMapLive 
            dronePos={gps || { lat: 0, lng: 0 }} 
            waypoints={waypoints || []} 
+           startPoint={startPoint || null}
            currentWaypointIndex={currentWaypointIndex || 0} 
         />
       </div>
